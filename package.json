@@ -1,0 +1,33 @@
+{
+  "name": "whatsapp-bulk",
+  "version": "1.0.0",
+  "description": "Whatsapp bulk message with puppeteer (nodejs)",
+  "main": "index.js",
+  "scripts": {
+    "serve": "node index.js"
+  },
+  "author": "do4mother",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "lodash": "^4.17.20",
+    "user-agents": "^1.0.664"
+  },
+  "devDependencies": {
+    "axios": "^0.21.1",
+    "check-os": "^1.0.1",
+    "cors": "^2.8.5",
+    "fs-extra": "^9.1.0",
+    "ip": "^1.1.5",
+    "jquery": "^3.5.1",
+    "jsdom": "^16.4.0",
+    "moment": "^2.29.1",
+    "mongodb": "^3.6.3",
+    "node-cron": "^2.0.3",
+    "puppeteer": "^7.1.0",
+    "puppeteer-core": "^7.0.4",
+    "puppeteer-extra": "^3.1.16",
+    "puppeteer-extra-plugin-stealth": "^2.7.4",
+    "stream": "0.0.2"
+  }
+}
