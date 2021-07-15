@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 
 app.get('/login', async (_req, res) => {
     const browser = await puppeteer.launch({
-        headless: false
+        headless: true
     });
     const page = await browser.newPage();
     const target = page._client._sessionId;
