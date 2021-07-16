@@ -4,6 +4,7 @@ const express = require('express');
 const { jQ } = require('./constants/defaults');
 const app = express();
 var cors = require('cors');
+const os = require('check-os');
 const port = 3000;
 const instances = {};
 
@@ -12,13 +13,19 @@ app.use(express.json());
 app.use(express.urlencoded({
     extended: true
 }));
+let executablePath = "./node_modules/puppeteer/.local-chromium/win64-848005/chrome-win/chrome.exe";
+if (os.isLinux) {
+    executablePath = "./node_modules/puppeteer/.local-chromium/linux-848005/chrome-linux/chrome";
+    // executablePath = "/usr/bin/chromium-browser";
+}
 app.get('/', (req, res) => {
     res.send('Hello World!')
 });
 
 app.get('/login', async (_req, res) => {
     const browser = await puppeteer.launch({
-        headless: true
+        headless: true,
+        executablePath
     });
     const page = await browser.newPage();
     const target = page._client._sessionId;
