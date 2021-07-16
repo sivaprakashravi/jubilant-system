@@ -2,9 +2,9 @@
   "name": "whatsapp-bulk",
   "version": "1.0.0",
   "description": "Whatsapp bulk message with puppeteer (nodejs)",
-  "main": "index.js",
+  "main": "init.js",
   "scripts": {
-    "serve": "node index.js"
+    "start": "node init.js"
   },
   "author": "do4mother",
   "license": "ISC",
