@@ -10,7 +10,7 @@ const instances = {};
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({
-  extended: true
+    extended: true
 }));
 app.get('/', (req, res) => {
     res.send('Hello World!')
@@ -38,10 +38,14 @@ app.get('/login', async (_req, res) => {
 const verifyPageConnection = async (target) => {
     let isConnected = 0;
     if (target) {
-        await instances[target].waitForSelector('.zaKsw', { timeout: 60000 });
-        isConnected = await instances[target].evaluate(p => {
-            return $('.zaKsw div:contains("Keep your phone connected")').length;
-        });
+        try {
+            await instances[target].waitForSelector('.zaKsw', { timeout: 60000 });
+            isConnected = await instances[target].evaluate(p => {
+                return $('.zaKsw div:contains("Keep your phone connected")').length;
+            });
+        } catch (e) {
+            isConnected = 0;
+        }
     }
     return isConnected ? true : false;
 }
@@ -49,8 +53,45 @@ const verifyPageConnection = async (target) => {
 app.get('/verify/:target', async (req, res) => {
     const target = req.params.target;
     const isConnected = await verifyPageConnection(target);
-    res.send({ isConnected });
+    res.send({ isConnected, since: new Date() });
 });
+
+function validateMobile(mobilenumber) { 
+    mobilenumber = Number(mobilenumber); 
+    var regmm='^([0-9][1])([6-9][0-9]{9})$';
+    var regmob = new RegExp(regmm);
+    return regmob.test(mobilenumber);  
+}
+
+async function messageLoop(page, contacts, content) {
+    contacts = contacts.filter(c => c && validateMobile(c));
+    const contactsLength = contacts.length;
+    await page.on('dialog', async dialog => {
+        await dialog.accept();
+    });
+    for (let index = 0; index < contactsLength; index++) {
+        const contact = contacts[index];
+        try {
+            await page.goto('https://web.whatsapp.com/send?phone=' + contact + '&text=' + content + ' -- index: ' + (index + 1));
+            await page.addScriptTag({ path: jQ });
+            try {
+                await page.waitForSelector('.copyable-text.selectable-text', { timeout: 60000 })
+            } catch (error) {
+                console.log('invalid phone number ' + contact + ' in line-' + eval(i + 1))
+                return;
+            }
+            await page.waitForSelector('footer', { timeout: 60000 })
+            const cName = await page.evaluate(() => {
+                return $('footer button span[data-testid="send"]').parent().attr('class');
+            });
+            // await page.focus(`.${cName}`);
+            await page.click(`.${cName}`);
+        } catch (err) {
+            console.log(err);
+            return err;
+        }
+    }
+}
 
 app.post('/message/:target', async (req, res) => {
     const { message, contacts } = req.body;
@@ -58,46 +99,29 @@ app.post('/message/:target', async (req, res) => {
     const isConnected = await verifyPageConnection(target);
     if (contacts && contacts.length && isConnected) {
         const page = instances[target];
-        contacts.forEach(async (contact) => {
-            const content = encodeURI(message);
-            await page.goto('https://web.whatsapp.com/send?phone=' + contact + '&text=' + content);
-            await page.addScriptTag({ path: jQ });
-            await page.on('dialog', async dialog => {
-                await dialog.accept();
-            });
-            try {
-                await page.waitForSelector('.copyable-text.selectable-text', { timeout: 10000 })
-            } catch (error) {
-                console.log('invalid phone number ' + contact + ' in line-' + eval(i + 1))
-                return;
-            }
-            await page.waitForSelector('footer', { timeout: 10000 })
-            const cName = await page.evaluate(() => {
-                return $('footer button span[data-testid="send"]').parent().attr('class');
-            });
-            // await page.focus(`.${cName}`);
-            await page.click(`.${cName}`);
-        });
-        res.send({message: "Success!"});
+        const content = encodeURI(message);
+        await messageLoop(page, contacts, content);
+        res.send({ message: "Messages Looped Successfully!" });
     } else {
-        res.send({err: "Something Went Wrong!"});
+        res.send({ err: "Something Went Wrong!" });
     }
 });
 
 app.get('/logout/:target', async (req, res) => {
     const target = req.params.target;
     const page = instances[target];
-    if(page) {        
+    if (page) {
         await page.waitForSelector('#side', { timeout: 60000 });
         await page.waitForSelector('div[aria-label="Menu"]', { timeout: 60000 });
         await page.click('div[aria-label="Menu"]');
         await page.waitForSelector('div[aria-label="Log out"]', { timeout: 60000 });
         await page.click('div[aria-label="Log out"]');
-        res.send({message: "Logout Success!"});
+        delete instances[target];
+        res.send({ message: "Logout Success!" });
     } else {
-        res.send({err: "Page Instance Not available! Logout from mobile device"});
+        res.send({ err: "Page Instance Not available! Logout from mobile device" });
     }
-    
+
 })
 
 app.listen(port, () => {
